@@ -14,12 +14,12 @@ from bezMouse import createBezCurve, createBezCurveMine
 import random
 
 region = []
-ironImg = 'C:\\osrsB\\images\\ironRock.png'
-screenshotFilePath = 'C:\\osrsB\\images\\screenshot.png'
+ironImg = 'C:/osrsB/images/ironRock.png'
+screenshotFilePath = 'C:/osrsB/images/screenshot.png'
 imgScreenRGB = cv2.imread(screenshotFilePath)
-imgTextInvenFull = cv2.imread('C:\\osrsB\\images\\invenFullText.png', 0)
+imgTextInvenFull = cv2.imread('C:/osrsB/images/invenFullText.png', 0)
 
-imgList = glob.glob('C:\\osrsB\\images\\iron\\*.png') #Create list for iron rocks
+imgList = glob.glob('C:/osrsB/images/iron/*.png') #Create list for iron rocks
 data = []
 for k in imgList:
     data.append(k)
@@ -28,7 +28,7 @@ for img in data:
     imageConvert = cv2.imread(img)
     grayList.append(cv2.cvtColor(imageConvert, cv2.COLOR_BGR2GRAY))
 
-imgIronInvenList = glob.glob('C:\\osrsB\\images\\fullInvenIron\\*.png') #Create list for inventory
+imgIronInvenList = glob.glob('C:/osrsB/images/fullInvenIron/*.png') #Create list for inventory
 dataInven = []
 for j in imgIronInvenList:
     dataInven.append(j)
@@ -47,6 +47,11 @@ def checkForRocksToMine(grayList): #Takes gray template items and match to scree
     threshold = 0.8
     imgScreenGray = takeScreenshotAndPass()
     rockNupyList = []
+    thresholdText = 0.98
+    resTextCheck = cv2.matchTemplate(imgScreenGray, imgTextInvenFull, cv2.TM_CCOEFF_NORMED)
+    invenText = np.where(resTextCheck >= thresholdText)
+    if len(invenText[0]) > 0:
+        return curInvenSpaces(True)
     for template in grayList: 
         res = cv2.matchTemplate(imgScreenGray, template, cv2.TM_CCOEFF_NORMED)
         locRockToMine = np.array((np.where(res >= threshold)))
@@ -72,19 +77,16 @@ def mineRock(): #Views screenshot and finds rocks to mine
     rockMineLen = len(locsToMine)
     if rockMineLen == 0: #Checks for mineable locations, if not found waits and calls again
         #time.sleep(((random.randrange(1, 5)/10)))
-        mineRock()
+        return mineRock()
     else:
-        threshold = 0.8
-        res = cv2.matchTemplate(imgScreenGray, template, cv2.TM_CCOEFF_NORMED)
-        invenText = np.where(res >= threshold)
         rockChoose = random.randrange(0, rockMineLen) #Picks rocks from list to mine
         x1, y1 = pyautogui.position()
         createBezCurveMine(x1, y1, random.choice(locsToMine[rockChoose][1]), random.choice(locsToMine[rockChoose][0]))
         pyautogui.click(button='left')
-        preMineRockCount = currentRockCount()
-        waitForEvent(preMineRockCount)
+        preMineRockCount = curInvenSpaces()
+        return waitForEvent(preMineRockCount)
 
-def currentRockCount():
+def curInvenSpaces(blockedInven=False):
     threshold = 0.97
     imgScreenGray = takeScreenshotAndPass()
     locInvenList = []
@@ -105,23 +107,28 @@ def currentRockCount():
     currentInvenSpaceTaken = (len(locInvenNumpySingleX))
     totalInvenNumpy = np.stack((locInvenNumpySingleX, locInvenNumpySingleY))
     if currentInvenSpaceTaken == 27:
-        clickAndDropInven(totalInvenNumpy)
+        return clickAndDropInven(totalInvenNumpy)
+    if blockedInven:
+        return clickAndDropInven(totalInvenNumpy)
     return currentInvenSpaceTaken
+
 
 def waitForEvent(preMineRockCount):
     timeMine = time.time()
     preCount = preMineRockCount
-    currentRockNum = currentRockCount()
+    global currentRockNum
+    currentRockNum = curInvenSpaces()
+    time.sleep((5)/10)
     if currentRockNum > preCount:
-        mineRock()
+        return mineRock()
     if  timeMine > nextMineTime:
-        mineRock()
+        return mineRock()
     else:
-        waitForEvent(preCount)
+        return waitForEvent(preCount)
 
 time.sleep(3)
-currentRockCount()
-while True:
+curInvenSpaces()
+while True: 
     mineRock()
 
 ''' 
