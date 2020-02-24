@@ -41,6 +41,7 @@ def takeScreenshotAndPass(): #Function call to take screenshot and pass the cv g
     pyautogui.screenshot(screenshotFilePath)
     imgScreenRGB = cv2.imread(screenshotFilePath)
     imgScreenGray = cv2.cvtColor(imgScreenRGB, cv2.COLOR_BGR2GRAY)
+    print('takeScreenshotAndPass')
     return imgScreenGray
     
 def checkForRocksToMine(grayList): #Takes gray template items and match to screenshot, returns locations of items
@@ -50,6 +51,7 @@ def checkForRocksToMine(grayList): #Takes gray template items and match to scree
     thresholdText = 0.98
     resTextCheck = cv2.matchTemplate(imgScreenGray, imgTextInvenFull, cv2.TM_CCOEFF_NORMED)
     invenText = np.where(resTextCheck >= thresholdText)
+    print('checkForRocksToMine')
     if len(invenText[0]) > 0:
         return curInvenSpaces(True)
     for template in grayList: 
@@ -60,12 +62,15 @@ def checkForRocksToMine(grayList): #Takes gray template items and match to scree
     return rockNupyList
 
 def clickAndDropInven(locInvenDrop): #Does not click first slot as it will be pick
-    time.sleep((random.randint(1, 3)))
     locDrop = locInvenDrop
+    x1, y1 = pyautogui.position()
+    createBezCurve(x1, y1, locDrop[1][0], locDrop[0][0])
     pyautogui.keyDown('shift')
+    print('clickAndDropInven')
     for k in range(len(locDrop[0])-1):
         createBezCurve(locDrop[1][k], locDrop[0][k], locDrop[1][k+1], locDrop[0][k+1])
         pyautogui.click(button='left')
+        time.sleep((1)/100)
     pyautogui.keyUp('shift')
         
 def mineRock(): #Views screenshot and finds rocks to mine
@@ -75,6 +80,7 @@ def mineRock(): #Views screenshot and finds rocks to mine
     locsToMine = checkForRocksToMine(grayList)
     #time.sleep(((random.randrange(1, 2)/10)))
     rockMineLen = len(locsToMine)
+    print('mineRock')
     if rockMineLen == 0: #Checks for mineable locations, if not found waits and calls again
         #time.sleep(((random.randrange(1, 5)/10)))
         return mineRock()
@@ -87,9 +93,10 @@ def mineRock(): #Views screenshot and finds rocks to mine
         return waitForEvent(preMineRockCount)
 
 def curInvenSpaces(blockedInven=False):
-    threshold = 0.97
+    threshold = 0.85
     imgScreenGray = takeScreenshotAndPass()
     locInvenList = []
+    print('curInvenSpaces')
     for template in invenList: 
         res = cv2.matchTemplate(imgScreenGray, template, cv2.TM_CCOEFF_NORMED)
         locInven = np.array((np.where(res >= threshold)))
@@ -116,20 +123,27 @@ def curInvenSpaces(blockedInven=False):
 def waitForEvent(preMineRockCount):
     timeMine = time.time()
     preCount = preMineRockCount
-    global currentRockNum
     currentRockNum = curInvenSpaces()
-    time.sleep((5)/10)
-    if currentRockNum > preCount:
-        return mineRock()
-    if  timeMine > nextMineTime:
-        return mineRock()
-    else:
+    time.sleep((3)/10)
+    print('waitForEvent')
+    try:
+        if currentRockNum > preCount:
+            return mineRock()
+        if  timeMine > nextMineTime:
+            return mineRock()
+        else:
+            return waitForEvent(preCount)
+    except:
         return waitForEvent(preCount)
 
 time.sleep(3)
 curInvenSpaces()
 while True: 
     mineRock()
+#    try:
+#        mineRock()
+#    except:
+#        mineRock()
 
 ''' 
 Camera at middle zoom
