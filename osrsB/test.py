@@ -69,11 +69,10 @@ def clickAndDropInven(locInvenDrop): #Does not click first slot as it will be pi
         pyautogui.click(button='left')
         time.sleep((1)/100)
     pyautogui.keyUp('shift')
-    return mineRock()
         
 def mineRock(): #Views screenshot and finds rocks to mine
     global nextMineTime
-    nextMineTime = time.time()
+    nextMineTime = time.monotonic()
     nextMineTime = nextMineTime+8
     locsToMine = checkForRocksToMine(grayList)
     #time.sleep(((random.randrange(1, 2)/10)))
@@ -111,15 +110,17 @@ def curInvenSpaces(blockedInven=False):
     totalInvenNumpy = np.stack((locInvenNumpySingleX, locInvenNumpySingleY))
     if currentInvenSpaceTaken == 27:
         print('27')
-        return clickAndDropInven(totalInvenNumpy)
+        clickAndDropInven(totalInvenNumpy)
+        return mineRock()
     if blockedInven:
         print('block')
-        return clickAndDropInven(totalInvenNumpy)
+        clickAndDropInven(totalInvenNumpy)
+        return mineRock()
     return currentInvenSpaceTaken
 
 
 def waitForEvent(preMineRockCount):
-    timeMine = time.time()
+    timeMine = time.monotonic()
     preCount = preMineRockCount
     currentRockNum = curInvenSpaces()
     time.sleep((3)/10)
