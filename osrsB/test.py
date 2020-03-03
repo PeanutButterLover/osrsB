@@ -19,7 +19,7 @@ screenshotFilePath = 'C:/osrsB/images/screenshot.png'
 imgScreenRGB = cv2.imread(screenshotFilePath)
 imgTextInvenFull = cv2.imread('C:/osrsB/images/invenFullText.png', 0)
 
-imgList = glob.glob('C:/osrsB/images/iron/*.png') #Create list for iron rocks
+imgList = glob.glob('C:/osrsB/images/coal/*.png') #Create list for iron rocks
 data = []
 for k in imgList:
     data.append(k)
@@ -44,7 +44,7 @@ def takeScreenshotAndPass(): #Function call to take screenshot and pass the cv g
     return imgScreenGray
     
 def checkForRocksToMine(grayList): #Takes gray template items and match to screenshot, returns locations of items
-    threshold = 0.8
+    threshold = 0.80
     imgScreenGray = takeScreenshotAndPass()
     rockNupyList = []
     thresholdText = 0.98
@@ -73,7 +73,7 @@ def clickAndDropInven(locInvenDrop): #Does not click first slot as it will be pi
 def mineRock(): #Views screenshot and finds rocks to mine
     global nextMineTime
     nextMineTime = time.monotonic()
-    nextMineTime = nextMineTime+8
+    nextMineTime = nextMineTime+12
     locsToMine = checkForRocksToMine(grayList)
     #time.sleep(((random.randrange(1, 2)/10)))
     rockMineLen = len(locsToMine)
@@ -86,7 +86,8 @@ def mineRock(): #Views screenshot and finds rocks to mine
         createBezCurveMine(x1, y1, random.choice(locsToMine[rockChoose][1]), random.choice(locsToMine[rockChoose][0]))
         pyautogui.click(button='left')
         preMineRockCount = curInvenSpaces()
-        return waitForEvent(preMineRockCount)
+        preCount = (len(preMineRockCount[0]))
+        return waitForEvent(preCount)
 
 def curInvenSpaces(blockedInven=False):
     threshold = 0.85
@@ -106,38 +107,39 @@ def curInvenSpaces(blockedInven=False):
     for k in range(len(locInvenList)):
         locInvenNumpySingleX.extend(locInvenList[k][0])
         locInvenNumpySingleY.extend(locInvenList[k][1])
-    currentInvenSpaceTaken = (len(locInvenNumpySingleX))
     totalInvenNumpy = np.stack((locInvenNumpySingleX, locInvenNumpySingleY))
-    if currentInvenSpaceTaken == 27:
-        print('27')
-        clickAndDropInven(totalInvenNumpy)
-        return mineRock()
     if blockedInven:
         print('block')
         clickAndDropInven(totalInvenNumpy)
-        return mineRock()
-    return currentInvenSpaceTaken
+        return
+    return totalInvenNumpy
 
+def waitFuncRocks(curRockPrev):
+    time.sleep(0.3)
+    precount = curRockPrev
+    return waitForEvent(precount)
 
 def waitForEvent(preMineRockCount):
     timeMine = time.monotonic()
     preCount = preMineRockCount
-    currentRockNum = curInvenSpaces()
-    time.sleep((3)/10)
-    try:
-        if currentRockNum > preCount:
-            return mineRock()
-        if  timeMine > nextMineTime:
-            return mineRock()
-        else:
-            return waitForEvent(preCount)
-    except:
-        return waitForEvent(preCount)
+    totalInvenNumpy = curInvenSpaces()
+    currentRockNum = (len(totalInvenNumpy[0]))
+    if currentRockNum == 27:
+        print('27')
+        clickAndDropInven(totalInvenNumpy)
+        return
+    if currentRockNum > preCount:
+        return mineRock()
+    if  timeMine > nextMineTime:
+        return mineRock()
+    else:
+        return waitFuncRocks(preCount)
 
 time.sleep(3)
 curInvenSpaces()
 while True: 
     mineRock()
+    print('dog')
 #    try:
 #        mineRock()
 #    except:
